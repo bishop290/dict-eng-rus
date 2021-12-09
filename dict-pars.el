@@ -1,0 +1,3 @@
+
+(defun dict-main ()
+  (interactive))
