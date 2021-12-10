@@ -6,12 +6,17 @@
            (or load-file-name buffer-file-name)) @file-relative-path))
 
 
-(setq CURRENT-PATH (xah-get-fullpath ""))
-(setq TABLE (make-hash-table :test 'equal))
-(setq DICTIONARY nil)
+(defconst DICT-CURRENT-PATH (xah-get-fullpath ""))
+(defconst DICT-EN-RU-PATH (concat DICT-CURRENT-PATH "dictionary/korolew_enru.dwa"))
+(defconst DICT-RU-EN-PATH (concat DICT-CURRENT-PATH "dictionary/korolew_ruen.dwa"))
+(defconst DICT-TABLE-PATH (concat DICT-CURRENT-PATH "search-table"))
+
+(setq DICT-TABLE (make-hash-table :test 'equal))
+(setq DICT-DICTIONARY nil)
+(setq DICT-BUFFER (get-buffer-create "*Dictionary*"))
 
 
-(defun next-point (current-point navigate)
+(defun dict-next-point (current-point navigate)
   "navigate: + or -"
   (let ((char (buffer-substring
                current-point (+ current-point 1))))
@@ -34,13 +39,28 @@
          (not (string-equal char ","))
          (not (string-equal char "."))
          (not (string-equal char "`"))
-         (not (string-equal char "'")))
-        (next-point (funcall navigate current-point 1) navigate)
+         (not (string-equal char "'"))
+         (not (string-equal char "!"))
+         (not (string-equal char "@"))
+         (not (string-equal char "#"))
+         (not (string-equal char "$"))
+         (not (string-equal char "%"))
+         (not (string-equal char "^"))
+         (not (string-equal char "&"))
+         (not (string-equal char "*"))
+         (not (string-equal char "+"))
+         (not (string-equal char "="))
+         (not (string-equal char "/"))
+         (not (string-equal char "|"))
+         (not (string-equal char "\\"))
+         (not (string-equal char "~"))
+         (not (string-equal char "?")))
+        (dict-next-point (funcall navigate current-point 1) navigate)
       (cond ((equal navigate '-) (+ current-point 1))
             ((equal navigate '+) current-point)))))
 
 
-(defun get-word ()
+(defun dict-get-word ()
   (let ((word "")
         (current-point (point)))
     (progn
@@ -57,18 +77,46 @@
                               (+ current-point 1)))
                   (= current-point (line-end-position))))
             (setq word (buffer-substring
-                        (next-point current-point '-)
-                        (next-point current-point '+)))))
+                        (dict-next-point current-point '-)
+                        (dict-next-point current-point '+)))))
         word))))
+
+
+(defun dict-file-to-list (path)
+  (with-temp-buffer
+    (insert-file-contents path)
+    (split-string (buffer-string) "\n" t)))
+
+
+(defun dict-hashtable-add (list table)
+  (let ((current-list (split-string (car list) ":")))
+    (puthash
+     (car current-list)
+     (string-to-number (car (cdr current-list)))
+     table)
+    (when (cdr list)
+      (dict-hashtable-add (cdr list) table))))
+
+
+(defun dict-file-to-hashtable (path table)
+  (with-temp-buffer
+    (insert-file-contents path)
+    (dict-hashtable-add (split-string (buffer-string) "\n" t)
+                        table)))
+
+
+(defun dict-load-dictionary ()
+  (dict-file-to-hashtable DICT-TABLE-PATH DICT-TABLE)
+  (setq DICT-DICTIONARY (vconcat DICT-DICTIONARY (dict-file-to-list DICT-EN-RU-PATH)))
+  (setq DICT-DICTIONARY (vconcat DICT-DICTIONARY (dict-file-to-list DICT-RU-EN-PATH))))
 
 
 (defun dict-main ()
   (interactive)
-  (let ((dict-en-rus (concat CURRENT-PATH "dictionary/korolew_enru.dwa"))
-        (dict-rus-en (concat CURRENT-PATH "dictionary/korolew_ruen.dwa"))
-        (dict-table (concat CURRENT-PATH "search-table"))
-        (word (downcase (get-word))))
+  (let ((word (downcase (dict-get-word))))
     (if (equal word "")
-        (message "Empty word. End.")
-      (message word))
+        (message "=> Empty word! End.")
+      (when (not DICT-DICTIONARY)
+        (message "=> Load dictionary...")
+        (dict-load-dictionary)))
     ))
