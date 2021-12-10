@@ -11,10 +11,11 @@
 (defconst DICT-RU-EN-PATH (concat DICT-CURRENT-PATH "dictionary/korolew_ruen.dwa"))
 (defconst DICT-TABLE-PATH (concat DICT-CURRENT-PATH "search-table"))
 (defconst DICT-MAX-WORD "99360")
+(defconst DICT-BUFFER-NAME "*Dictionary*")
 
 (setq DICT-TABLE (make-hash-table :test 'equal))
 (setq DICT-DICTIONARY nil)
-(setq DICT-BUFFER (get-buffer-create "*Dictionary*"))
+(setq DICT-BUFFER (get-buffer-create DICT-BUFFER-NAME))
 
 
 (defun dict-next-point (current-point navigate)
@@ -141,6 +142,16 @@
   result-string))
 
 
+(defun dict-display (word dict-string)
+  (with-current-buffer DICT-BUFFER-NAME
+      (goto-char (point-min))
+      (erase-buffer)
+      (insert dict-string)
+      (highlight-regexp
+       (concat "^" word ".*=")))
+    (display-buffer DICT-BUFFER-NAME))
+
+
 (defun dict-main ()
   (interactive)
   (let ((word (downcase (dict-get-word)))
@@ -155,5 +166,6 @@
           (dict-search
            word
            (gethash (substring word 0 2) DICT-TABLE)))
-    (message result-string)
-    ))
+    (if (equal result-string "")
+        (message "=> Word not found...")
+      (dict-display word result-string))))
