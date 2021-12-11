@@ -123,13 +123,14 @@
 
 
 (defun dict-display (word dict-string)
-  (with-current-buffer DICT-BUFFER-NAME
+  (let ((reg-templ (concat "^" word ".+=")))
+    (with-current-buffer DICT-BUFFER-NAME
       (goto-char (point-min))
       (erase-buffer)
       (insert dict-string)
-      (highlight-regexp
-       (concat "^" word ".*=")))
-    (display-buffer DICT-BUFFER-NAME))
+      (unhighlight-regexp reg-templ)
+      (highlight-regexp reg-templ))
+    (display-buffer DICT-BUFFER-NAME)))
 
 
 (defun dict-main ()
