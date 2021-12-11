@@ -18,49 +18,10 @@
 (setq DICT-BUFFER (get-buffer-create DICT-BUFFER-NAME))
 
 
-(defun dict-end? (p)
-  (cond
-    ((= p (point-max)) t)
-    ((= p (line-end-position)) t)
-    (t nil)))
-
-
-(defun dict-letter? (p)
-  (cond
-    ((dict-end? p) nil)
-    (t (if (string-match
-            "[a-zа-я-|]" (string (char-after p)))
-           t
-         nil))))
-
-
-(defun dict-word-borders (p)
-  (let ((prev p)
-        (next p)
-        (flag-prev t)
-        (flag-next t))
-    (progn
-      (while (or flag-prev flag-next)
-        (progn
-          (when flag-next
-            (if (dict-letter? (+ next 1))
-                (setq next (+ next 1))
-              (setq flag-next nil)))
-          (when flag-prev
-            (if (dict-letter? (- prev 1))
-                (setq prev (- prev 1))
-              (setq flag-prev nil)))))
-      (list prev (+ next 1)))))
-
-
 (defun dict-get-word ()
-  (let ((p (point)))
-    (cond
-      ((use-region-p) (buffer-substring (region-beginning) (region-end)))
-      ((not (dict-letter? p)) "")
-      (t
-       (let ((borders (dict-word-borders p)))
-         (buffer-substring (car borders) (cadr borders)))))))
+  (if (use-region-p)
+      (buffer-substring (region-beginning) (region-end))
+    (thing-at-point 'word)))
 
 
 (defun dict-file-to-list (path)
@@ -122,7 +83,7 @@
 
 
 (defun dict-display (word dict-string)
-  (let ((reg-templ (concat "^" word ".+=")))
+  (let ((reg-templ word))
     (with-current-buffer DICT-BUFFER-NAME
       (goto-char (point-min))
       (erase-buffer)
@@ -134,24 +95,25 @@
 
 (defun dict-main ()
   (interactive)
-  (let ((word (downcase (thing-at-point 'word)))
+  (let ((word (dict-get-word))
         (substr-word "")
         (result-string "")
         (hash-value ""))
-    (if (equal word "")
+    (if (equal word nil)
         (message "=> Empty word! End.")
       (progn
+        (setq word (downcase word))
         (when (not DICT-DICTIONARY)
           (message "=> Load dictionary...")
-          (dict-load-dictionary)))
-      (message "=> Start search")
-      (if (= (length word) 1)
-          (setq substr-word (substring word 0 1))
-        (setq substr-word (substring word 0 2)))
-      (setq hash-value (gethash substr-word DICT-TABLE))
-      (when hash-value
-        (setq result-string
-              (dict-search word hash-value)))
-      (if (equal result-string "")
-          (message "=> Word not found...")
-        (dict-display word result-string)))))
+          (dict-load-dictionary))
+        (message "=> Start search")
+        (if (= (length word) 1)
+            (setq substr-word (substring word 0 1))
+          (setq substr-word (substring word 0 2)))
+        (setq hash-value (gethash substr-word DICT-TABLE))
+        (when hash-value
+          (setq result-string
+                (dict-search word hash-value)))
+        (if (equal result-string "")
+            (message "=> Word not found...")
+          (dict-display word result-string))))))
