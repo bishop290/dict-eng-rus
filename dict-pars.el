@@ -28,11 +28,10 @@
 (defun dict-letter? (p)
   (cond
     ((dict-end? p) nil)
-    (t
-     (if
-         (string-match "[a-z-|]" (string (char-after p)))
-         t
-       nil))))
+    (t (if (string-match
+            "[a-zа-я-|]" (string (char-after p)))
+           t
+         nil))))
 
 
 (defun dict-word-borders (p)
@@ -135,7 +134,7 @@
 
 (defun dict-main ()
   (interactive)
-  (let ((word (downcase (dict-get-word)))
+  (let ((word (downcase (thing-at-point 'word)))
         (substr-word "")
         (result-string "")
         (hash-value ""))
