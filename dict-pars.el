@@ -10,7 +10,7 @@
 (defconst DICT-EN-RU-PATH (concat DICT-CURRENT-PATH "dictionary/korolew_enru.dwa"))
 (defconst DICT-RU-EN-PATH (concat DICT-CURRENT-PATH "dictionary/korolew_ruen.dwa"))
 (defconst DICT-TABLE-PATH (concat DICT-CURRENT-PATH "search-table"))
-(defconst DICT-MAX-WORD "99360")
+(defconst DICT-MAX-WORD "")
 (defconst DICT-BUFFER-NAME "*Dictionary*")
 
 (setq DICT-TABLE (make-hash-table :test 'equal))
@@ -53,13 +53,15 @@
 
 
 (defun dict-load-dictionary ()
-  (dict-file-to-hashtable DICT-TABLE-PATH DICT-TABLE)
   (setq DICT-DICTIONARY (vconcat
                          DICT-DICTIONARY
                          (dict-file-to-list DICT-EN-RU-PATH)))
   (setq DICT-DICTIONARY (vconcat
                          DICT-DICTIONARY
-                         (dict-file-to-list DICT-RU-EN-PATH))))
+                         (dict-file-to-list DICT-RU-EN-PATH)))
+  (setq DICT-MAX-WORD (number-to-string
+                       (- (length DICT-DICTIONARY) 1)))
+  (dict-file-to-hashtable DICT-TABLE-PATH DICT-TABLE))
 
 
 (defun dict-match (word string)
