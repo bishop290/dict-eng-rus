@@ -91,7 +91,7 @@
       (erase-buffer)
       (insert dict-string)
       (unhighlight-regexp reg-templ)
-      (highlight-regexp reg-templ))
+      (highlight-regexp reg-templ 'bold))
     (display-buffer DICT-BUFFER-NAME)))
 
 
