@@ -95,6 +95,39 @@
     (display-buffer DICT-BUFFER-NAME)))
 
 
+(defun dict-subword-table (length)
+  (cond ((= length 4) 3)
+        ((= length 5) 3)
+        ((= length 6) 3)
+        ((= length 7) 4)
+        ((= length 8) 4)
+        ((= length 9) 4)
+        ((= length 10) 5)
+        ((= length 11) 5)
+        ((= length 12) 5)
+        ((> length 12) 6)))
+
+
+(defun dict-search-subword (word hash-value)
+  (let ((len-word (length word))
+        (result "")
+        (border 3))
+    (cond ((not hash-value) (message "=> Word not found."))
+          ((<= len-word 3) (message "=> Word not found."))
+          ((> len-word 3) (progn
+                            (setq border (dict-subword-table len-word))
+                            (setq word (substring word 0 border))
+                            (message (concat
+                                      "=> Start search first "
+                                      (number-to-string border)
+                                      " symbols..."))
+                            (setq result
+                                  (dict-search word hash-value))
+                            (if (equal result "")
+                                (message "=> Word not found.")
+                              (dict-display word result)))))))
+
+
 (defun dict-main ()
   (interactive)
   (let ((word (dict-get-word))
@@ -108,7 +141,7 @@
         (when (not DICT-DICTIONARY)
           (message "=> Load dictionary...")
           (dict-load-dictionary))
-        (message "=> Start search")
+        (message "=> Start search...")
         (if (= (length word) 1)
             (setq substr-word (substring word 0 1))
           (setq substr-word (substring word 0 2)))
@@ -117,5 +150,7 @@
           (setq result-string
                 (dict-search word hash-value)))
         (if (equal result-string "")
-            (message "=> Word not found...")
+            (progn
+              (message "=> Word not found.")
+              (dict-search-subword word hash-value))
           (dict-display word result-string))))))
