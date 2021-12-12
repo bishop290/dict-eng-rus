@@ -60,7 +60,7 @@
                          DICT-DICTIONARY
                          (dict-file-to-list DICT-RU-EN-PATH)))
   (setq DICT-MAX-WORD (number-to-string
-                       (- (length DICT-DICTIONARY) 1)))
+                       (length DICT-DICTIONARY)))
   (dict-file-to-hashtable DICT-TABLE-PATH DICT-TABLE))
 
 
@@ -137,7 +137,10 @@
     (if (equal word nil)
         (message "=> Empty word! End.")
       (progn
-        (setq word (downcase word))
+        (setq word (replace-regexp-in-string
+                    "ё"
+                    "е"
+                    (downcase word)))
         (when (not DICT-DICTIONARY)
           (message "=> Load dictionary...")
           (dict-load-dictionary))
