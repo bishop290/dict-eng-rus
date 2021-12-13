@@ -1,3 +1,9 @@
+(defconst DICT-DISPLAY-MESSAGE t)
+
+(defun dict-message (str)
+  (when DICT-DISPLAY-MESSAGE
+    (message (concat "dict-pars.el: " str))))
+
 
 (defun xah-get-fullpath (@file-relative-path)
   "Return the full path of *file-relative-path, relative to caller's file location.
@@ -16,6 +22,29 @@
 (setq DICT-TABLE (make-hash-table :test 'equal))
 (setq DICT-DICTIONARY nil)
 (setq DICT-BUFFER (get-buffer-create DICT-BUFFER-NAME))
+
+
+(setq DICT-NUM-STORAGE 0)
+(defconst DICT-MAX-STORAGE 1000)
+(setq DICT-LIST-STORAGE '())
+(setq DICT-HASH-STORAGE (make-hash-table :test 'equal))
+
+(defun dict-save-in-hash-word (word result)
+  (progn
+    (if (= DICT-NUM-STORAGE DICT-MAX-STORAGE)
+        (progn
+          (remhash (car DICT-LIST-STORAGE) DICT-HASH-STORAGE)
+          (setq DICT-LIST-STORAGE (cdr DICT-LIST-STORAGE)))
+      (setq DICT-NUM-STORAGE (+ DICT-NUM-STORAGE 1)))
+    (setq DICT-LIST-STORAGE (append DICT-LIST-STORAGE '(word)))
+    (dict-message (concat "Save ["
+                          word
+                          "] to hash. <Hash:"
+                          (number-to-string DICT-NUM-STORAGE)
+                          " Max:"
+                          (number-to-string DICT-MAX-STORAGE)
+                          ">"))
+    (puthash word result DICT-HASH-STORAGE)))
 
 
 (defun dict-get-word ()
@@ -86,12 +115,14 @@
 
 (defun dict-display (word dict-string)
   (let ((reg-templ word))
+    (dict-save-in-hash-word word dict-string)
     (with-current-buffer DICT-BUFFER-NAME
       (goto-char (point-min))
       (erase-buffer)
       (insert dict-string)
       (unhighlight-regexp reg-templ)
-      (highlight-regexp reg-templ 'bold))
+      (highlight-regexp reg-templ 'bold)
+      (goto-char (point-max)))
     (display-buffer DICT-BUFFER-NAME)))
 
 
@@ -112,48 +143,53 @@
   (let ((len-word (length word))
         (result "")
         (border 3))
-    (cond ((not hash-value) (message "=> Word not found."))
-          ((<= len-word 3) (message "=> Word not found."))
+    (cond ((not hash-value) (dict-message (concat "Word [" word "] not found.")))
+          ((<= len-word 3) (dict-message (concat "Word [" word "] not found.")))
           ((> len-word 3) (progn
                             (setq border (dict-subword-table len-word))
                             (setq word (substring word 0 border))
-                            (message (concat
-                                      "=> Start search first "
+                            (dict-message (concat
+                                      "Start search first "
                                       (number-to-string border)
                                       " symbols..."))
                             (setq result
                                   (dict-search word hash-value))
                             (if (equal result "")
-                                (message "=> Word not found.")
+                                (dict-message (concat "Word [" word "] not found."))
                               (dict-display word result)))))))
 
 
 (defun dict-main ()
   (interactive)
   (let ((word (dict-get-word))
+        (word-in-storage "")
         (substr-word "")
         (result-string "")
         (hash-value ""))
     (if (equal word nil)
-        (message "=> Empty word! End.")
+        (dict-message "Empty word! End.")
       (progn
         (setq word (replace-regexp-in-string
                     "ё"
                     "е"
                     (downcase word)))
         (when (not DICT-DICTIONARY)
-          (message "=> Load dictionary...")
+          (dict-message "Load dictionary...")
           (dict-load-dictionary))
-        (message "=> Start search...")
-        (if (= (length word) 1)
-            (setq substr-word (substring word 0 1))
-          (setq substr-word (substring word 0 2)))
-        (setq hash-value (gethash substr-word DICT-TABLE))
-        (when hash-value
-          (setq result-string
-                (dict-search word hash-value)))
-        (if (equal result-string "")
-            (progn
-              (message "=> Word not found.")
-              (dict-search-subword word hash-value))
-          (dict-display word result-string))))))
+        (dict-message "Start search...")
+        (setq word-in-storage (gethash word DICT-HASH-STORAGE))
+        (if word-in-storage
+            (dict-display word word-in-storage)
+          (progn
+            (if (= (length word) 1)
+                (setq substr-word (substring word 0 1))
+              (setq substr-word (substring word 0 2)))
+            (setq hash-value (gethash substr-word DICT-TABLE))
+            (when hash-value
+              (setq result-string
+                    (dict-search word hash-value)))
+            (if (equal result-string "")
+                (progn
+                  (dict-message (concat "Word [" word "] not found."))
+                  (dict-search-subword word hash-value))
+              (dict-display word result-string))))))))
