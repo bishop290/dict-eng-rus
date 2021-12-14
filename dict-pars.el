@@ -30,17 +30,18 @@
 (setq DICT-NUM-STORAGE 0)
 (defconst DICT-MAX-STORAGE 1000)
 (setq DICT-LIST-STORAGE '())
-(setq DICT-HASH-STORAGE (make-hash-table :test 'equal))
+(setq DICT-HASH-STORAGE
+      (make-hash-table :test 'equal :size DICT-MAX-STORAGE))
 
 (defun dict-save-in-hash-word (word result)
-  (unless (gethash word DICT-HASH-STORAGE)
+  (unless (gethash word DICT-HASH-STORAGE nil)
     (progn
-      (if (= DICT-NUM-STORAGE DICT-MAX-STORAGE)
+      (if (equal DICT-NUM-STORAGE DICT-MAX-STORAGE)
           (progn
             (remhash (car DICT-LIST-STORAGE) DICT-HASH-STORAGE)
             (setq DICT-LIST-STORAGE (cdr DICT-LIST-STORAGE)))
         (setq DICT-NUM-STORAGE (+ DICT-NUM-STORAGE 1)))
-      (setq DICT-LIST-STORAGE (append DICT-LIST-STORAGE '(word)))
+      (setq DICT-LIST-STORAGE (append DICT-LIST-STORAGE (list word)))
       (dict-message (concat "Save to hash. <Hash:"
                             (number-to-string DICT-NUM-STORAGE)
                             " Max:"
@@ -189,14 +190,14 @@
         (unless (buffer-live-p DICT-BUFFER)
           (setq DICT-BUFFER (get-buffer-create DICT-BUFFER-NAME)))
         (dict-message "Start search...")
-        (setq word-in-storage (gethash word DICT-HASH-STORAGE))
+        (setq word-in-storage (gethash word DICT-HASH-STORAGE nil))
         (if word-in-storage
             (dict-display word word-in-storage)
           (progn
             (if (= (length word) 1)
                 (setq substr-word (substring word 0 1))
               (setq substr-word (substring word 0 2)))
-            (setq hash-value (gethash substr-word DICT-TABLE))
+            (setq hash-value (gethash substr-word DICT-TABLE nil))
             (when hash-value
               (setq result-string
                     (dict-search word hash-value)))
