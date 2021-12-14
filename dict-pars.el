@@ -23,6 +23,9 @@
 (setq DICT-DICTIONARY nil)
 (setq DICT-BUFFER (get-buffer-create DICT-BUFFER-NAME))
 
+(setq DICT-LAST-POINT 0)
+(setq DICT-LAST-WORD nil)
+
 
 (setq DICT-NUM-STORAGE 0)
 (defconst DICT-MAX-STORAGE 1000)
@@ -37,9 +40,7 @@
           (setq DICT-LIST-STORAGE (cdr DICT-LIST-STORAGE)))
       (setq DICT-NUM-STORAGE (+ DICT-NUM-STORAGE 1)))
     (setq DICT-LIST-STORAGE (append DICT-LIST-STORAGE '(word)))
-    (dict-message (concat "Save ["
-                          word
-                          "] to hash. <Hash:"
+    (dict-message (concat "Save to hash. <Hash:"
                           (number-to-string DICT-NUM-STORAGE)
                           " Max:"
                           (number-to-string DICT-MAX-STORAGE)
@@ -48,9 +49,18 @@
 
 
 (defun dict-get-word ()
-  (if (use-region-p)
-      (buffer-substring (region-beginning) (region-end))
-    (thing-at-point 'word)))
+  (let ((p (point))
+        (w nil))
+    (unless (equal p DICT-LAST-POINT)
+      (progn
+        (setq DICT-LAST-POINT p)
+        (if (use-region-p)
+            (setq w (buffer-substring (region-beginning) (region-end)))
+          (setq w (thing-at-point 'word)))
+        (if (equal w DICT-LAST-WORD)
+            (setq w nil)
+          (setq DICT-LAST-WORD w))
+        w))))
 
 
 (defun dict-file-to-list (path)
@@ -122,8 +132,7 @@
       (insert dict-string)
       (unhighlight-regexp reg-templ)
       (highlight-regexp reg-templ 'bold)
-      (goto-char (point-max)))
-    (display-buffer DICT-BUFFER-NAME)))
+      (goto-char (point-max)))))
 
 
 (defun dict-subword-table (length)
@@ -143,8 +152,8 @@
   (let ((len-word (length word))
         (result "")
         (border 3))
-    (cond ((not hash-value) (dict-message (concat "Word [" word "] not found.")))
-          ((<= len-word 3) (dict-message (concat "Word [" word "] not found.")))
+    (cond ((not hash-value) (dict-message (concat "Word not found.")))
+          ((<= len-word 3) (dict-message (concat "Word not found.")))
           ((> len-word 3) (progn
                             (setq border (dict-subword-table len-word))
                             (setq word (substring word 0 border))
@@ -155,11 +164,11 @@
                             (setq result
                                   (dict-search word hash-value))
                             (if (equal result "")
-                                (dict-message (concat "Word [" word "] not found."))
+                                (dict-message (concat "Word not found."))
                               (dict-display word result)))))))
 
 
-(defun dict-main ()
+(defun dict-manual ()
   (interactive)
   (let ((word (dict-get-word))
         (word-in-storage "")
@@ -173,7 +182,7 @@
                     "ё"
                     "е"
                     (downcase word)))
-        (when (not DICT-DICTIONARY)
+        (unless DICT-DICTIONARY
           (dict-message "Load dictionary...")
           (dict-load-dictionary))
         (dict-message "Start search...")
@@ -190,6 +199,16 @@
                     (dict-search word hash-value)))
             (if (equal result-string "")
                 (progn
-                  (dict-message (concat "Word [" word "] not found."))
+                  (dict-message (concat "Word not found."))
                   (dict-search-subword word hash-value))
               (dict-display word result-string))))))))
+
+
+(defun dict-auto ()
+  (add-hook 'post-command-hook 'dict-manual 0 t)
+  (dict-message "Automode enable."))
+
+
+(define-derived-mode dict-auto-mode fundamental-mode "dict-auto-mode"
+                     "dict-pars.el: auto translate"
+                     (dict-auto))
