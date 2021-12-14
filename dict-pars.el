@@ -186,6 +186,8 @@
         (unless DICT-DICTIONARY
           (dict-message "Load dictionary...")
           (dict-load-dictionary))
+        (unless (buffer-live-p DICT-BUFFER)
+          (setq DICT-BUFFER (get-buffer-create DICT-BUFFER-NAME)))
         (dict-message "Start search...")
         (setq word-in-storage (gethash word DICT-HASH-STORAGE))
         (if word-in-storage
