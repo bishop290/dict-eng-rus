@@ -33,19 +33,20 @@
 (setq DICT-HASH-STORAGE (make-hash-table :test 'equal))
 
 (defun dict-save-in-hash-word (word result)
-  (progn
-    (if (= DICT-NUM-STORAGE DICT-MAX-STORAGE)
-        (progn
-          (remhash (car DICT-LIST-STORAGE) DICT-HASH-STORAGE)
-          (setq DICT-LIST-STORAGE (cdr DICT-LIST-STORAGE)))
-      (setq DICT-NUM-STORAGE (+ DICT-NUM-STORAGE 1)))
-    (setq DICT-LIST-STORAGE (append DICT-LIST-STORAGE '(word)))
-    (dict-message (concat "Save to hash. <Hash:"
-                          (number-to-string DICT-NUM-STORAGE)
-                          " Max:"
-                          (number-to-string DICT-MAX-STORAGE)
-                          ">"))
-    (puthash word result DICT-HASH-STORAGE)))
+  (unless (gethash word DICT-HASH-STORAGE)
+    (progn
+      (if (= DICT-NUM-STORAGE DICT-MAX-STORAGE)
+          (progn
+            (remhash (car DICT-LIST-STORAGE) DICT-HASH-STORAGE)
+            (setq DICT-LIST-STORAGE (cdr DICT-LIST-STORAGE)))
+        (setq DICT-NUM-STORAGE (+ DICT-NUM-STORAGE 1)))
+      (setq DICT-LIST-STORAGE (append DICT-LIST-STORAGE '(word)))
+      (dict-message (concat "Save to hash. <Hash:"
+                            (number-to-string DICT-NUM-STORAGE)
+                            " Max:"
+                            (number-to-string DICT-MAX-STORAGE)
+                            ">"))
+      (puthash word result DICT-HASH-STORAGE))))
 
 
 (defun dict-get-word ()
@@ -209,6 +210,7 @@
   (dict-message "Automode enable."))
 
 
-(define-derived-mode dict-auto-mode fundamental-mode "dict-auto-mode"
-                     "dict-pars.el: auto translate"
-                     (dict-auto))
+(define-derived-mode dict-auto-mode fundamental-mode
+  "dict-auto-mode"
+  "dict-pars.el: auto translate"
+  (dict-auto))
