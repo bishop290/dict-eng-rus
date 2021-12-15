@@ -22,6 +22,7 @@
 (setq DICT-TABLE (make-hash-table :test 'equal))
 (setq DICT-DICTIONARY nil)
 (setq DICT-BUFFER (get-buffer-create DICT-BUFFER-NAME))
+(defconst DICT-SHOW-BUFFER? t)
 
 (setq DICT-LAST-POINT 0)
 (setq DICT-LAST-WORD nil)
@@ -126,7 +127,7 @@
 
 
 (defun dict-display (word dict-string)
-  (let ((reg-templ word))
+  (let ((reg-templ (concat "^" word "[^[:space:]]*")))
     (dict-save-in-hash-word word dict-string)
     (with-current-buffer DICT-BUFFER-NAME
       (goto-char (point-min))
@@ -134,7 +135,9 @@
       (insert dict-string)
       (unhighlight-regexp reg-templ)
       (highlight-regexp reg-templ 'bold)
-      (goto-char (point-max)))))
+      (goto-char (point-max))
+      (when DICT-SHOW-BUFFER?
+        (display-buffer DICT-BUFFER-NAME)))))
 
 
 (defun dict-subword-table (length)
