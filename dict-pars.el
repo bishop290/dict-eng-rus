@@ -137,7 +137,10 @@
       (highlight-regexp reg-templ 'bold)
       (goto-char (point-max))
       (when DICT-SHOW-BUFFER?
-        (display-buffer DICT-BUFFER-NAME)))))
+        (display-buffer
+         DICT-BUFFER-NAME
+         '(display-buffer-at-bottom . ((side . bottom)
+                                       (window-height . 15))))))))
 
 
 (defun dict-subword-table (length)
