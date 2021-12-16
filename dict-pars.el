@@ -23,6 +23,7 @@
 (setq DICT-DICTIONARY nil)
 (setq DICT-BUFFER (get-buffer-create DICT-BUFFER-NAME))
 (defconst DICT-SHOW-BUFFER? t)
+(defconst DICT-AUTO? nil)
 
 (setq DICT-LAST-POINT 0)
 (setq DICT-LAST-WORD nil)
@@ -215,11 +216,13 @@
 
 
 (defun dict-auto ()
-  (add-hook 'post-command-hook 'dict-manual 0 t)
-  (dict-message "Automode enable."))
-
-
-(define-derived-mode dict-auto-mode fundamental-mode
-  "dict-auto-mode"
-  "dict-pars.el: auto translate"
-  (dict-auto))
+  (interactive)
+  (if DICT-AUTO?
+      (progn
+        (setq DICT-AUTO? nil)
+        (remove-hook 'post-command-hook 'dict-manual t)
+        (dict-message "Automode disable."))
+    (progn
+      (setq DICT-AUTO? t)
+      (add-hook 'post-command-hook 'dict-manual 0 t)
+      (dict-message "Automode enable."))))
